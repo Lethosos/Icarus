@@ -1,11 +1,11 @@
 package tombenpotter.icarus.common.network;
 
-import cpw.mods.fml.common.network.simpleimpl.IMessage;
-import cpw.mods.fml.common.network.simpleimpl.IMessageHandler;
-import cpw.mods.fml.common.network.simpleimpl.MessageContext;
 import io.netty.buffer.ByteBuf;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
+import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
+import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
+import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
 import tombenpotter.icarus.api.wings.ISpecialWing;
 import tombenpotter.icarus.common.items.ItemWing;
 
@@ -36,8 +36,8 @@ public class PacketJump implements IMessage, IMessageHandler<PacketJump, IMessag
 
     @Override
     public IMessage onMessage(PacketJump message, MessageContext ctx) {
-        EntityPlayer player = ctx.getServerHandler().playerEntity;
-        ItemStack wingStack = player.inventory.armorInventory[2];
+        EntityPlayer player = ctx.getServerHandler().player;
+        ItemStack wingStack = player.inventory.armorInventory.get(2);
 
         if (wingStack == null || !(wingStack.getItem() instanceof ItemWing)) {
             return null;
@@ -47,16 +47,16 @@ public class PacketJump implements IMessage, IMessageHandler<PacketJump, IMessag
 
         if (message.isSpecialWing) {
             ISpecialWing specialWing = (ISpecialWing) itemWing;
-            if (!specialWing.canWingBeUsed(player.inventory.armorInventory[2], player)) {
+            if (!specialWing.canWingBeUsed(player.inventory.armorInventory.get(2), player)) {
                 return null;
             }
-            specialWing.onWingFlap(player.inventory.armorInventory[2], player);
+            specialWing.onWingFlap(player.inventory.armorInventory.get(2), player);
         }
 
         player.motionY = message.jump;
         player.fallDistance = 0;
 
-        itemWing.handleExhaustion(player.worldObj, player, wingStack);
+        itemWing.handleExhaustion(player.getEntityWorld(), player, wingStack);
 
         return null;
     }

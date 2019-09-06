@@ -1,40 +1,32 @@
 package tombenpotter.icarus.common.items;
 
-import cpw.mods.fml.common.registry.GameRegistry;
-import cpw.mods.fml.relauncher.Side;
-import cpw.mods.fml.relauncher.SideOnly;
-import net.minecraft.client.renderer.texture.IIconRegister;
 import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.util.IIcon;
-import tombenpotter.icarus.Icarus;
+import net.minecraftforge.fml.common.registry.GameRegistry;
+import net.minecraftforge.fml.relauncher.Side;
+import net.minecraftforge.fml.relauncher.SideOnly;
+import tombenpotter.icarus.Main;
 import tombenpotter.icarus.common.IcarusItems;
+import tombenpotter.icarus.utils.Reference;
 
 import java.util.HashMap;
 import java.util.List;
 
-public class ItemSingleWing extends Item {
+public class ItemSingleWing<IIcon> extends Item {
 
-    public IIcon[] icon = new IIcon[50];
+    public IIcon[] icon;
     private HashMap<Integer, String> tooltipForMeta = new HashMap<Integer, String>();
 
     public ItemSingleWing() {
-        setCreativeTab(Icarus.creativeTab);
-        setUnlocalizedName(Icarus.name + ".singleWing");
+        setCreativeTab(Main.creativeTab);
+        setUnlocalizedName(Reference.NAME + ".singleWing");
         setHasSubtypes(true);
     }
 
     public void addTooltip(int meta, String tooltip) {
         tooltipForMeta.put(meta, tooltip);
-    }
-
-    @SideOnly(Side.CLIENT)
-    public void registerIcons(IIconRegister ri) {
-        for (int i = 0; i < IcarusItems.wingNames.size(); i++) {
-            this.icon[i] = ri.registerIcon(Icarus.texturePath + ":wings/" + IcarusItems.wingNames.get(i));
-        }
     }
 
     @Override
@@ -49,17 +41,17 @@ public class ItemSingleWing extends Item {
     }
 
     @SideOnly(Side.CLIENT)
-    public void getSubItems(Item item, CreativeTabs par2CreativeTabs, List list) {
+    public void getSubItems(Item item, CreativeTabs par2CreativeTabs, List<ItemStack> list) {
         for (int i = 0; i < IcarusItems.wingNames.size(); i++) {
-            if (GameRegistry.findItem(Icarus.modid, "Item" + IcarusItems.wingNames.get(i) + "s") != null) {
+            if (GameRegistry.makeItemStack("Item" + IcarusItems.wingNames.get(i) + "s",0,0,"");
+            {
                 list.add(new ItemStack(this, 1, i));
             }
         }
     }
 
-    @Override
     @SideOnly(Side.CLIENT)
-    public void addInformation(ItemStack stack, EntityPlayer player, List list, boolean held) {
+    public void addInformation(ItemStack stack, EntityPlayer player, List<String> list, boolean held) {
         for (int i : tooltipForMeta.keySet()) {
             if (i == stack.getItemDamage()) {
                 list.add(tooltipForMeta.get(i));

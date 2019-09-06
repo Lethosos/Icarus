@@ -2,9 +2,13 @@ package tombenpotter.icarus.common.items;
 
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Blocks;
+import net.minecraft.init.MobEffects;
 import net.minecraft.item.ItemStack;
 import net.minecraft.potion.Potion;
 import net.minecraft.potion.PotionEffect;
+import net.minecraft.potion.PotionType;
+import net.minecraft.util.EnumParticleTypes;
+import net.minecraft.util.SoundEvent;
 import net.minecraft.world.World;
 import tombenpotter.icarus.api.IcarusConstants;
 import tombenpotter.icarus.api.wings.ISpecialWing;
@@ -70,9 +74,9 @@ public class ItemWingVanilla extends ItemWing implements ISpecialWing {
         public void onWingFlap(ItemStack stack, EntityPlayer player) {
             super.onWingFlap(stack, player);
 
-            player.worldObj.playSoundEffect(player.posX, player.posY, player.posZ, "random.explode", 1.0F, 1.0F);
-            if (player.worldObj.isRemote) {
-                player.worldObj.spawnParticle("largeexplode", player.posX, player.posY, player.posZ, 1, 1, 1);
+            player.world.playSound(player ,player.getPosition(), new SoundEvent, "random.explode", 1.0F, 1.0F);
+            if (player.world.isRemote) {
+                player.world.spawnParticle(EnumParticleTypes.getByName("largeexplode"), player.posX, player.posY, player.posZ, 1, 1, 1, 0);
             }
         }
     }
@@ -86,14 +90,14 @@ public class ItemWingVanilla extends ItemWing implements ISpecialWing {
         public void onWingFlap(ItemStack stack, EntityPlayer player) {
             super.onWingFlap(stack, player);
 
-            player.addPotionEffect(new PotionEffect(Potion.poison.getId(), 40, 3));
+            player.addPotionEffect(new PotionEffect(MobEffects.POISON, 40, 3));
         }
 
         @Override
         public void onWingTick(ItemStack stack, EntityPlayer player) {
             super.onWingTick(stack, player);
 
-            player.addPotionEffect(new PotionEffect(Potion.hunger.getId(), 0, 1));
+            player.addPotionEffect(new PotionEffect(MobEffects.HUNGER, 0, 1));
         }
     }
 
@@ -106,12 +110,9 @@ public class ItemWingVanilla extends ItemWing implements ISpecialWing {
         public void onWingTick(ItemStack stack, EntityPlayer player) {
             super.onWingTick(stack, player);
 
-            World world = player.worldObj;
-            int x = (int) Math.floor(player.posX);
-            int y = (int) player.posY + 1;
-            int z = (int) Math.floor(player.posZ);
-            if (!world.isRemote && world.getTotalWorldTime() % 20 == 0 && world.getBlock(x, y, z) == Blocks.air) {
-                world.setBlock(x, y, z, IcarusBlocks.invisiLight);
+            World world = player.world;
+         if (!world.isRemote && world.getTotalWorldTime() % 20 == 0 && world.isAirBlock(player.getPosition())) {
+                world.addBlockEvent(player.getPosition(), IcarusBlocks.invisiLight, 0, 0);
             }
         }
     }

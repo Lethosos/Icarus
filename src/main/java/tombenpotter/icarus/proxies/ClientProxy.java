@@ -1,15 +1,13 @@
 package tombenpotter.icarus.proxies;
 
-import cpw.mods.fml.common.FMLCommonHandler;
-import net.minecraftforge.common.MinecraftForge;
-import tombenpotter.icarus.client.ClientEventHandler;
+import net.minecraft.client.renderer.block.model.ModelResourceLocation;
+import net.minecraft.item.Item;
+import net.minecraftforge.client.model.ModelLoader;
 
-public class ClientProxy extends CommonProxy {
-
-    @Override
-    public void registerRenders() {
-        MinecraftForge.EVENT_BUS.register(new ClientEventHandler());
-        FMLCommonHandler.instance().bus().register(new ClientEventHandler());
-        ClientEventHandler.registerKeybindings();
+public class ClientProxy extends CommonProxy
+{
+    public void registerItemRenderer(Item item, int meta, String id)
+    {
+        ModelLoader.setCustomModelResourceLocation(item, meta, new ModelResourceLocation(item.getRegistryName(), id));
     }
 }

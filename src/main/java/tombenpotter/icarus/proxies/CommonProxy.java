@@ -1,7 +1,8 @@
 package tombenpotter.icarus.proxies;
 
-public class CommonProxy {
+import net.minecraft.item.Item;
 
-    public void registerRenders() {
-    }
+public class CommonProxy
+{
+    public void registerItemRenderer(Item item, int meta, String id){}
 }

@@ -1,27 +1,29 @@
 package tombenpotter.icarus.common.items;
 
-import cpw.mods.fml.relauncher.ReflectionHelper;
-import cpw.mods.fml.relauncher.Side;
-import cpw.mods.fml.relauncher.SideOnly;
+
 import net.minecraft.block.material.Material;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.ModelBiped;
-import net.minecraft.client.renderer.texture.IIconRegister;
+import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.effect.EntityLightningBolt;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Items;
+import net.minecraft.inventory.EntityEquipmentSlot;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemArmor;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.DamageSource;
 import net.minecraft.world.World;
-import net.minecraft.world.biome.BiomeGenBase;
+import net.minecraft.world.biome.Biome;
 import net.minecraftforge.common.ISpecialArmor;
+import net.minecraftforge.fml.relauncher.ReflectionHelper;
+import net.minecraftforge.fml.relauncher.Side;
+import net.minecraftforge.fml.relauncher.SideOnly;
 import tombenpotter.icarus.ConfigHandler;
-import tombenpotter.icarus.Icarus;
+import tombenpotter.icarus.Main;
 import tombenpotter.icarus.api.IcarusConstants;
 import tombenpotter.icarus.api.wings.ISpecialWing;
 import tombenpotter.icarus.api.wings.IWingHUD;
@@ -31,6 +33,7 @@ import tombenpotter.icarus.common.network.PacketJump;
 import tombenpotter.icarus.common.util.HoverHandler;
 import tombenpotter.icarus.common.util.IcarusHelper;
 import tombenpotter.icarus.common.util.cofh.StringHelper;
+import tombenpotter.icarus.utils.Reference;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -41,13 +44,13 @@ public abstract class ItemWing extends ItemArmor implements ISpecialArmor, IWing
     private Wing wing;
 
     public ItemWing(ArmorMaterial material, Wing wing) {
-        super(material, 3, 1);
+        super(material, 3, EntityEquipmentSlot.CHEST);
 
         this.wing = wing;
 
-        setUnlocalizedName(Icarus.name + ".wing." + getWing().name);
+        setUnlocalizedName(Reference.NAME + ".wing." + getWing().name);
         setMaxDamage(getWing().durability);
-        setCreativeTab(Icarus.creativeTab);
+        setCreativeTab(Main.creativeTab);
     }
 
     public Wing getWing() {
@@ -58,8 +61,8 @@ public abstract class ItemWing extends ItemArmor implements ISpecialArmor, IWing
         return getWing();
     }
 
-    public List tooltip(ItemStack stack) {
-        List list = new ArrayList();
+    public List<String> tooltip(ItemStack stack) {
+        List<String> list = new ArrayList<String>();
         list.add(" ");
         list.add(StringHelper.LIGHT_BLUE + StringHelper.localize("tooltip.icarus.height") + StringHelper.END + ": " + getWing(stack).maxHeight);
         list.add(StringHelper.LIGHT_BLUE + StringHelper.localize("tooltip.icarus.boost") + StringHelper.END + ": " + getWing(stack).jumpBoost);
@@ -75,7 +78,7 @@ public abstract class ItemWing extends ItemArmor implements ISpecialArmor, IWing
         if (!player.onGround && world.isRemote) {
             if (Minecraft.getMinecraft().gameSettings.keyBindJump.isPressed()) {
                 double jumpBoost = getWing(stack).jumpBoost;
-                int enchantmentLevel = EnchantmentHelper.getEnchantmentLevel(ConfigHandler.boostEnchantID, stack);
+                int enchantmentLevel = EnchantmentHelper.getEnchantmentLevel(Enchantment.getEnchantmentByID(ConfigHandler.boostEnchantID), stack);
                 if (enchantmentLevel > 0) {
                     jumpBoost += (double) enchantmentLevel / 20;
                 }
@@ -97,23 +100,24 @@ public abstract class ItemWing extends ItemArmor implements ISpecialArmor, IWing
     }
 
     public void handleWater(World world, EntityPlayer player, ItemStack stack) {
-        if (player.isInsideOfMaterial(Material.water)) {
+        if (player.isInsideOfMaterial(Material.WATER)) {
             player.motionY = getWing(stack).waterDrag;
         }
     }
 
     public void handleWeather(World world, EntityPlayer player, ItemStack stack) {
-        if (player.worldObj.isRaining()) {
-            Field enableRain = ReflectionHelper.findField(BiomeGenBase.class, "field_76765_S", "enableRain", "ax");
+        if (player.world.isRaining()) {
+            Field enableRain = ReflectionHelper.findField(Biome.class, "field_76765_S", "enableRain", "ax");
             try {
                 double rainDrag = getWing(stack).rainDrag;
-                int enchantmentLevel = EnchantmentHelper.getEnchantmentLevel(ConfigHandler.waterproofEnchantID, stack);
+                int enchantmentLevel = EnchantmentHelper.getEnchantmentLevel(Enchantment.getEnchantmentByID(ConfigHandler.waterproofEnchantID), stack);
                 if (enchantmentLevel > 0) {
                     rainDrag += 0.03 * enchantmentLevel;
                 }
 
-                if (enableRain.getBoolean(world.getBiomeGenForCoords((int) player.posX, (int) player.posZ)) &&
-                        world.canBlockSeeTheSky((int) player.posX, (int) player.posY, (int) player.posZ)) {
+                if (enableRain.getBoolean(world.isRainingAt(player.getPosition())) &&
+                        world.canBlockSeeSky(player.getPosition()))
+                {
                     player.motionY = rainDrag;
                 }
             } catch (IllegalAccessException e) {
@@ -121,20 +125,20 @@ public abstract class ItemWing extends ItemArmor implements ISpecialArmor, IWing
             }
         }
 
-        if (player.worldObj.isThundering()) {
+        if (player.world.isThundering()) {
             double rainDrag = getWing(stack).rainDrag;
-            int enchantmentLevel = EnchantmentHelper.getEnchantmentLevel(ConfigHandler.waterproofEnchantID, stack);
+            int enchantmentLevel = EnchantmentHelper.getEnchantmentLevel(Enchantment.getEnchantmentByID(ConfigHandler.waterproofEnchantID), stack);
             if (enchantmentLevel > 0) {
                 rainDrag += 0.03 * enchantmentLevel;
             }
 
-            if (world.getBiomeGenForCoords((int) player.posX, (int) player.posZ).canSpawnLightningBolt() &&
-                    world.canBlockSeeTheSky((int) player.posX, (int) player.posY, (int) player.posZ)) {
+            if (world.isThundering() &&
+                    world.canBlockSeeSky(player.getPosition())) {
                 player.motionY = rainDrag;
             }
 
-            if (!player.onGround && world.canBlockSeeTheSky((int) player.posX, (int) player.posY, (int) player.posZ) && world.rand.nextInt(500) == 0) {
-                world.addWeatherEffect(new EntityLightningBolt(world, player.posX, player.posY, player.posZ));
+            if (!player.onGround && world.canBlockSeeSky(player.getPosition()) && world.rand.nextInt(500) == 0) {
+                world.addWeatherEffect(new EntityLightningBolt(world, player.posX, player.posY, player.posZ, true);
                 player.motionY -= 1.5;
             }
         }
@@ -150,7 +154,7 @@ public abstract class ItemWing extends ItemArmor implements ISpecialArmor, IWing
             }
 
             double glideFactor = getWing(stack).glideFactor;
-            int enchantmentLevel = EnchantmentHelper.getEnchantmentLevel(ConfigHandler.hoverEnchantID, stack);
+            int enchantmentLevel = EnchantmentHelper.getEnchantmentLevel(Enchantment.getEnchantmentByID(ConfigHandler.hoverEnchantID), stack);
             if (enchantmentLevel > 0) {
                 glideFactor -= 0.03 * enchantmentLevel;
             }
@@ -160,9 +164,9 @@ public abstract class ItemWing extends ItemArmor implements ISpecialArmor, IWing
 
     public void handleHeight(World world, EntityPlayer player, ItemStack stack) {
         if (!player.onGround) {
-            if (ConfigHandler.dimensionWingsAlwaysBurn.contains(world.provider.dimensionId) || (player.posY > (getWing(stack).maxHeight + ConfigHandler.maxHeightOffset) && world.isDaytime() && world.canBlockSeeTheSky((int) player.posX, (int) player.posY, (int) player.posZ) && !ConfigHandler.dimensionNoWingBurn.contains(world.provider.dimensionId))) {
+            if (ConfigHandler.dimensionWingsAlwaysBurn.contains(world.provider.getDimension()) || (player.posY > (getWing(stack).maxHeight + ConfigHandler.maxHeightOffset) && world.isDaytime() && world.canBlockSeeTheSky((int) player.posX, (int) player.posY, (int) player.posZ) && !ConfigHandler.dimensionNoWingBurn.contains(world.provider.dimensionId))) {
                 player.setFire(2);
-                player.attackEntityFrom(DamageSource.inFire, 1.0F);
+                player.attackEntityFrom(DamageSource.IN_FIRE, 1.0F);
             }
         }
     }
@@ -179,9 +183,9 @@ public abstract class ItemWing extends ItemArmor implements ISpecialArmor, IWing
 
     public void handleExhaustion(World world, EntityPlayer player, ItemStack stack) {
         float exhaustion = ConfigHandler.hungerConsumed;
-        if (player.worldObj.provider.dimensionId == -1) {
+        if (player.world.provider.getDimension() == -1) {
             exhaustion += 0.5F;
-        } else if (player.worldObj.provider.dimensionId == 1) {
+        } else if (player.world.provider.getDimension() == 1) {
             exhaustion -= 0.25F;
         }
         player.addExhaustion(exhaustion);
@@ -200,7 +204,7 @@ public abstract class ItemWing extends ItemArmor implements ISpecialArmor, IWing
         handleWater(world, player, stack);
         handleWeather(world, player, stack);
 
-        if (ConfigHandler.dimensionWingsDisabled.contains(world.provider.dimensionId)) {
+        if (ConfigHandler.dimensionWingsDisabled.contains(world.provider.getDimension())) {
             return;
         }
 
@@ -219,10 +223,9 @@ public abstract class ItemWing extends ItemArmor implements ISpecialArmor, IWing
         }
     }
 
-    @Override
     @SideOnly(Side.CLIENT)
     public void registerIcons(IIconRegister iconRegister) {
-        this.itemIcon = iconRegister.registerIcon(Icarus.texturePath + ":doubleWings/" + getWing().name + "s");
+        this.itemIcon = iconRegister.registerIcon(Reference.TEXTURE_PATH + ":doubleWings/" + getWing().name + "s");
     }
 
     @Override
@@ -233,18 +236,18 @@ public abstract class ItemWing extends ItemArmor implements ISpecialArmor, IWing
             Item armor = armorStack.getItem();
 
             //Because vanilla is stupid.
-            if (armor == Items.leather_chestplate) {
+            if (armor == Items.LEATHER_CHESTPLATE) {
                 return "textures/models/armor/leather_layer_1.png";
-            } else if (armor == Items.chainmail_chestplate) {
+            } else if (armor == Items.CHAINMAIL_CHESTPLATE) {
                 return "textures/models/armor/chainmail_layer_1.png";
-            } else if (armor == Items.iron_chestplate) {
+            } else if (armor == Items.IRON_CHESTPLATE) {
                 return "textures/models/armor/iron_layer_1.png";
-            } else if (armor == Items.golden_chestplate) {
+            } else if (armor == Items.GOLDEN_CHESTPLATE) {
                 return "textures/models/armor/gold_layer_1.png";
-            } else if (armor == Items.diamond_chestplate) {
+            } else if (armor == Items.DIAMOND_CHESTPLATE) {
                 return "textures/models/armor/diamond_layer_1.png";
             } else {
-                return armor.getArmorTexture(armorStack, entity, slot, type);
+                return armor.getArmorTexture(armorStack, entity, EntityEquipmentSlot.CHEST, type);
             }
         }
 
@@ -256,10 +259,10 @@ public abstract class ItemWing extends ItemArmor implements ISpecialArmor, IWing
     public ModelBiped getArmorModel(EntityLivingBase entityLiving, ItemStack stack, int armorSlot) {
         if (stack.hasTagCompound() && stack.stackTagCompound.hasKey(IcarusConstants.NBT_ITEMSTACK)) {
             ItemStack armorStack = ItemStack.loadItemStackFromNBT(stack.stackTagCompound.getCompoundTag(IcarusConstants.NBT_ITEMSTACK));
-            return armorStack.getItem().getArmorModel(entityLiving, armorStack, armorSlot);
+            return armorStack.getItem().getArmorModel(entityLiving, armorStack, EntityEquipmentSlot.CHEST, new ModelBiped());
         }
 
-        return super.getArmorModel(entityLiving, stack, armorSlot);
+        return super.getArmorModel(entityLiving, stack, EntityEquipmentSlot.CHEST, new ModelBiped());
     }
 
     @Override
@@ -282,8 +285,8 @@ public abstract class ItemWing extends ItemArmor implements ISpecialArmor, IWing
     }
 
     @Override
-    public int getColorFromItemStack(ItemStack p_82790_1_, int p_82790_2_) {
-        return super.getColorFromItemStack(p_82790_1_, p_82790_2_);
+    public int getColorFromItemStack(ItemStack p_82790_1_) {
+        return super.getColor(p_82790_1_);
     }
 
     @Override
@@ -296,7 +299,8 @@ public abstract class ItemWing extends ItemArmor implements ISpecialArmor, IWing
         if (ConfigHandler.showWingsStats) {
             if (!StringHelper.isShiftKeyDown()) {
                 list.add(IcarusHelper.pressShiftForDetails());
-            } else if (StringHelper.isShiftKeyDown()) {
+            } else {
+                StringHelper.isShiftKeyDown();
                 list.addAll(tooltip(stack));
             }
         }

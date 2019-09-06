@@ -1,4 +1,6 @@
+/*
 package tombenpotter.icarus;
+
 
 import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.Loader;
@@ -75,3 +77,4 @@ public class Icarus {
         }
     }
 }
+ */
